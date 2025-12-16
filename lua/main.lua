@@ -8,7 +8,7 @@ _G.sys = require("sys")
 local LEDA = gpio.setup(12, 0, gpio.PULLUP)
 local LEDB = gpio.setup(13, 0, gpio.PULLUP)
 
-gpiocondition = {0, 0, 0, 0, 0, 0}
+gpiocondition = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 
 PINS = {2, 3, 12, 13}
 
