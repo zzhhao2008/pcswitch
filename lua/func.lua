@@ -49,9 +49,15 @@ function Srv(uri)
                         msg = "参数错误-GPIO PIN ERROR"
                     })
                 end
-                if pinvalue == 0 or pinvalue == 1 then
-                    gpio.set(pinid, pinvalue)
-                    gpiocondition[pinid] = pinvalue
+                if setGPIO(pinid, pinvalue) then
+                    if pathArr[5] then
+                        local closetime = tonumber(pathArr[5])*1000
+                        if(closetime > 0 and closetime < 11*1000) then
+                            sys.timerStart(function()
+                                setGPIO(pinid, 0)
+                            end, closetime)
+                        end
+                    end 
                     return json.encode({
                         code = 1,
                         msg = "success",
@@ -60,7 +66,7 @@ function Srv(uri)
                 end
                 return json.encode({
                     code = 0,
-                    msg = "参数错误-GPIOPINVALUE"
+                    msg = "FAILED"
                 })
             end
         elseif ordertype == "gpiocondition" then

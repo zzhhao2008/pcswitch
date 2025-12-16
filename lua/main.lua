@@ -8,15 +8,24 @@ _G.sys = require("sys")
 local LEDA = gpio.setup(12, 0, gpio.PULLUP)
 local LEDB = gpio.setup(13, 0, gpio.PULLUP)
 
-gpiocondition = {0,0,0,0,0,0}
+gpiocondition = {0, 0, 0, 0, 0, 0}
 
-PINS = {2,3,12,13}
+PINS = {2, 3, 12, 13}
 
 require("func")
 require("secrets")
 
 gpio.debounce(1, 100)
 gpio.debounce(0, 100)
+
+function setGPIO(pinid, pinvalue)
+    if (pinvalue == 0 or pinvalue == 1) then
+        gpio.set(pinid, pinvalue)
+        gpiocondition[pinid] = pinvalue
+        return true
+    end
+    return false
+end
 
 sys.taskInit(function()
     local i = 2
@@ -26,7 +35,7 @@ sys.taskInit(function()
     end
     sys.wait(1000)
     wlan.init()
-    
+
     if MASK and IP and GATEWAY then
         wlan.staIp(false, IP, MASK, GATEWAY)
     end
