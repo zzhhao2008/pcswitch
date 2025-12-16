@@ -1,1 +1,398 @@
-Nothing Here
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PCSwitch GPIO 控制面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            color: #667eea;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .status-item {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .status-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .indicator-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .indicator {
+            text-align: center;
+            padding: 15px;
+        }
+        
+        .indicator-light {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 0 auto 10px;
+        }
+        
+        .indicator-on {
+            background-color: #28a745;
+            box-shadow: 0 0 15px #28a745;
+        }
+        
+        .indicator-off {
+            background-color: #6c757d;
+        }
+        
+        .indicator-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background-color: #28a745;
+        }
+        
+        .notification.error {
+            background-color: #dc3545;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .indicator-container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PCSwitch 控制面板</h1>
+            <p class="subtitle">远程控制 GPIO 引脚状态</p>
+        </header>
+        
+        <main>
+            <div class="card">
+                <h2 class="card-title">⚡ 输入状态监测</h2>
+                <div class="indicator-container">
+                    <div class="indicator">
+                        <div class="indicator-light indicator-off" id="powerIndicator"></div>
+                        <div class="indicator-label">电源状态</div>
+                    </div>
+                    <div class="indicator">
+                        <div class="indicator-light indicator-off" id="hddIndicator"></div>
+                        <div class="indicator-label">硬盘活动</div>
+                    </div>
+                </div>
+                <p>状态每5秒自动刷新，也可以手动刷新：</p>
+                <button class="btn-submit" onclick="refreshInputStatus()" style="width: auto; margin-top: 15px;">刷新状态</button>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title">🔌 输出控制</h2>
+                <div class="control-group">
+                    <label for="pinSelect">选择引脚:</label>
+                    <select id="pinSelect">
+                        <option value="2">引脚 2</option>
+                        <option value="3">引脚 3</option>
+                        <option value="12">引脚 12</option>
+                        <option value="13">引脚 13</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="valueSelect">设置值:</label>
+                    <select id="valueSelect">
+                        <option value="1">开启 (1)</option>
+                        <option value="0">关闭 (0)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="delayInput">自动关闭时间 (秒):</label>
+                    <input type="number" id="delayInput" min="0" max="10" placeholder="可选，0-10秒">
+                </div>
+
+                <button class="btn-submit" onclick="setGPIO()">执行控制</button>
+            </div>
+
+            <div class="card">
+                <h2 class="card-title">📊 输出状态</h2>
+                <button class="btn-submit" onclick="refreshOutputStatus()" style="width: auto; margin-bottom: 20px;">刷新状态</button>
+                <div class="status-panel" id="outputStatusPanel">
+                    <!-- 状态信息将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>PCSwitch GPIO 控制系统 © 2025</p>
+        </footer>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // 显示通知消息
+        function showNotification(message, isSuccess) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification ' + (isSuccess ? 'success' : 'error');
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 获取输入引脚状态 (电源和硬盘指示灯)
+        async function refreshInputStatus() {
+            try {
+                // 获取引脚0的状态 (电源状态)
+                const powerResponse = await fetch('/readgpio/0');
+                const powerData = await powerResponse.json();
+                
+                // 获取引脚1的状态 (硬盘活动状态)
+                const hddResponse = await fetch('/readgpio/1');
+                const hddData = await hddResponse.json();
+                
+                if (powerData.code === 1 && hddData.code === 1) {
+                    const powerValue = powerData.data;
+                    const hddValue = hddData.data;
+                    
+                    // 更新电源状态指示灯
+                    const powerIndicator = document.getElementById('powerIndicator');
+                    powerIndicator.className = 'indicator-light ' + (powerValue == 1 ? 'indicator-on' : 'indicator-off');
+                    
+                    // 更新硬盘活动指示灯
+                    const hddIndicator = document.getElementById('hddIndicator');
+                    hddIndicator.className = 'indicator-light ' + (hddValue == 1 ? 'indicator-on' : 'indicator-off');
+                    
+                    showNotification('输入状态更新成功', true);
+                } else {
+                    showNotification('获取输入状态失败', false);
+                }
+            } catch (error) {
+                showNotification('网络错误: ' + error.message, false);
+            }
+        }
+        
+        // 获取输出引脚状态
+        async function refreshOutputStatus() {
+            try {
+                const response = await fetch('/gpiocondition');
+                const data = await response.json();
+                
+                if (data.code === 1) {
+                    updateOutputStatusPanel(data.data);
+                    showNotification('输出状态更新成功', true);
+                } else {
+                    showNotification('获取输出状态失败: ' + data.msg, false);
+                }
+            } catch (error) {
+                showNotification('网络错误: ' + error.message, false);
+            }
+        }
+        
+        // 更新输出状态面板
+        function updateOutputStatusPanel(statusArray) {
+            const statusPanel = document.getElementById('outputStatusPanel');
+            statusPanel.innerHTML = '';
+            
+            const pins = [2, 3, 12, 13];
+            pins.forEach((pin, index) => {
+                const statusItem = document.createElement('div');
+                statusItem.className = 'status-item';
+                // 根据代码分析，statusArray 应该是一个包含6个元素的数组，其中索引2,3,12,13对应相应引脚
+                // 但实际使用中可能是直接映射到数组索引，因此我们需要根据实际情况调整
+                const valueIndex = [null, null, 2, 3, null, null, null, null, null, null, null, null, 12, 13].indexOf(pin);
+                const value = valueIndex !== -1 ? statusArray[valueIndex] : 'N/A';
+                
+                statusItem.innerHTML = `
+                    <div class="status-label">引脚 ${pin}</div>
+                    <div class="status-value">${value !== 'N/A' ? value : '-'}</div>
+                `;
+                statusPanel.appendChild(statusItem);
+            });
+        }
+        
+        // 设置GPIO引脚
+        async function setGPIO() {
+            const pin = document.getElementById('pinSelect').value;
+            const value = document.getElementById('valueSelect').value;
+            const delay = document.getElementById('delayInput').value;
+            
+            let url = `/setgpio/${pin}/${value}`;
+            if (delay && delay > 0) {
+                url += `/${delay}`;
+            }
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.code === 1) {
+                    showNotification(`引脚 ${pin} 设置成功`, true);
+                    refreshOutputStatus(); // 刷新输出状态
+                } else {
+                    showNotification(`设置失败: ${data.msg}`, false);
+                }
+            } catch (error) {
+                showNotification(`网络错误: ${error.message}`, false);
+            }
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshInputStatus(); // 获取初始输入状态
+            refreshOutputStatus(); // 获取初始输出状态
+            
+            // 每5秒自动刷新一次输入状态
+            setInterval(refreshInputStatus, 5000);
+        });
+    </script>
+</body>
+</html>
