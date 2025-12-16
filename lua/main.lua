@@ -26,9 +26,12 @@ sys.taskInit(function()
     end
     sys.wait(1000)
     wlan.init()
-    -- 修改成自己的ssid和password
+    
+    if MASK and IP and GATEWAY then
+        wlan.staIp(false, IP, MASK, GATEWAY)
+    end
+
     wlan.connect(WLAN_SSID, WLAN_PASS)
-    -- wlan.connect("uiot", "")
     log.info("wlan", "wait for IP_READY")
 
     while not wlan.ready() do
